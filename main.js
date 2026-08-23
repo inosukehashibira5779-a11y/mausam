@@ -1,4 +1,3 @@
-import "./style.css"
 import { getWeather } from "./weather.js"
 import { ICON_MAP } from "./iconMap.js"
 
@@ -12,7 +11,7 @@ if (document.readyState === "loading") {
 }
 
 function initApp() {
-  console.log("✅ DOM ready, getting location...")
+  console.log("✅ DOM ready")
   navigator.geolocation.getCurrentPosition(positionSuccess, positionError)
 }
 
@@ -30,7 +29,7 @@ function positionSuccess({ coords }) {
 }
 
 function positionError(error) {
-  console.error("❌ Location denied:", error.message)
+  console.error("❌ Location error:", error.message)
   alert("Please enable location access")
 }
 
@@ -44,7 +43,7 @@ function getIconUrl(iconCode) {
 }
 
 function renderWeather({ current, daily, hourly }) {
-  console.log("🎨 Rendering...")
+  console.log("🎨 Rendering weather...")
   
   // Current weather
   const icon = document.querySelector("[data-current-icon]")
