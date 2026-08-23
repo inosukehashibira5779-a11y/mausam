@@ -1,6 +1,6 @@
 import "./style.css"
-import { getWeather } from "./weather"
-import { ICON_MAP } from "./iconMap";
+import { getWeather } from "./weather.js"  // ✅ Fixed: Added .js extension
+import { ICON_MAP } from "./iconMap.js";
 
 navigator.geolocation.getCurrentPosition(positionSuccess, positionError)
 
@@ -24,21 +24,30 @@ function renderWeather({ current, daily, hourly }) {
     document.body.classList.remove("blurred")
 }    
 
+// ✅ Fixed: Added safety check to prevent crashes if element doesn't exist
 function setValue(selector, value, { parent = document } = {}) {
     const element = parent.querySelector(`[data-${selector}]`)
-    console.log(selector, element)
-
-    element.textContent = value
+    if (element) {
+        element.textContent = value
+    }
 }
 
 function getIconUrl(iconCode) {
     return `./icons/${ICON_MAP.get(iconCode)}.svg`
 }
 
-const currentIcon = document.querySelector('[data-current-icon]')
+// ✅ Fixed: Query elements after DOM is ready
+let currentIcon
 
 function renderCurrentWeather(current) {
-    currentIcon.src = getIconUrl(current.iconCode)
+    if (!currentIcon) {
+        currentIcon = document.querySelector('[data-current-icon]')
+    }
+    
+    if (currentIcon) {
+        currentIcon.src = getIconUrl(current.iconCode)
+    }
+    
     setValue("current-temp", current.currentTemp)
     setValue("current-high", current.highTemp)
     setValue("current-low", current.lowTemp)
@@ -49,10 +58,19 @@ function renderCurrentWeather(current) {
 }
 
 const DAY_FORMATTER = new Intl.DateTimeFormat(undefined, { weekday: "long" })
-const dailySection = document.querySelector('[data-day-section]')
-const dayCardTemplate = document.getElementById("day-card-template")
+
+let dailySection
+let dayCardTemplate
 
 function renderDailyWeather(daily) {
+    // ✅ Fixed: Query elements on first run
+    if (!dailySection) {
+        dailySection = document.querySelector('[data-day-section]')
+        dayCardTemplate = document.getElementById("day-card-template")
+    }
+
+    if (!dailySection) return
+    
     dailySection.innerHTML  = "";
     daily.forEach(day => {
         const element = dayCardTemplate.content.cloneNode(true)
@@ -64,10 +82,19 @@ function renderDailyWeather(daily) {
 }
 
 const HOURLY_FORMATTER = new Intl.DateTimeFormat(undefined, { hour: "numeric"})
-const hourlySection = document.querySelector('[data-hour-section]')
-const hourRowTemplate = document.getElementById("hour-row-template")
+
+let hourlySection
+let hourRowTemplate
 
 function renderHourlyWeather(hourly) {
+    // ✅ Fixed: Query elements on first run
+    if (!hourlySection) {
+        hourlySection = document.querySelector('[data-hour-section]')
+        hourRowTemplate = document.getElementById("hour-row-template")
+    }
+
+    if (!hourlySection) return
+
     hourlySection.innerHTML = "";
 
     hourly.forEach(hour => {
