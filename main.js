@@ -1,8 +1,6 @@
 import { getWeather } from "./weather.js"
 import { ICON_MAP } from "./iconMap.js"
 
-console.log("🚀 App starting...")
-
 // Wait for DOM to be fully loaded
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initApp)
@@ -11,25 +9,20 @@ if (document.readyState === "loading") {
 }
 
 function initApp() {
-  console.log("✅ DOM ready")
   navigator.geolocation.getCurrentPosition(positionSuccess, positionError)
 }
 
 function positionSuccess({ coords }) {
-  console.log("📍 Location:", coords.latitude, coords.longitude)
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-  console.log("🕐 Timezone:", timezone)
   
   getWeather(coords.latitude, coords.longitude, timezone)
     .then(renderWeather)
     .catch(e => {
-      console.error("❌ Error:", e)
       alert("Error: " + e.message)
     })
 }
 
 function positionError(error) {
-  console.error("❌ Location error:", error.message)
   alert("Please enable location access")
 }
 
@@ -39,12 +32,10 @@ function setValue(selector, value, { parent = document } = {}) {
 }
 
 function getIconUrl(iconCode) {
-  return `./icons/${ICON_MAP.get(iconCode)}.svg`
+  return `./public/icons/${ICON_MAP.get(iconCode)}.svg`
 }
 
 function renderWeather({ current, daily, hourly }) {
-  console.log("🎨 Rendering weather...")
-  
   // Current weather
   const icon = document.querySelector("[data-current-icon]")
   if (icon) icon.src = getIconUrl(current.iconCode)
@@ -95,5 +86,4 @@ function renderWeather({ current, daily, hourly }) {
   }
   
   document.body.classList.remove("blurred")
-  console.log("✅ Done!")
 }
