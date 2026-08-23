@@ -72,3 +72,5 @@ function parseHourlyWeather({ hourly, current: current_weather }) {
         }
     }).filter(({ timestamp }) => timestamp >= current_weather.time * 1000)
 }
+
+
