@@ -16,7 +16,11 @@ function positionSuccess({ coords }) {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
   
   getWeather(coords.latitude, coords.longitude, timezone)
-    .then(renderWeather)
+    .then(data => {
+      window.weatherData = data
+      console.log("Daily data:", data.daily)
+      renderWeather(data)
+    })
     .catch(e => {
       alert("Error: " + e.message)
     })
@@ -51,16 +55,15 @@ function renderWeather({ current, daily, hourly }) {
   // Daily forecast
   const daySection = document.querySelector("[data-day-section]")
   const dayTemplate = document.getElementById("day-card-template")
-  const dayFormatter = new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric" })
   
   if (daySection && dayTemplate) {
     daySection.innerHTML = ""
-    daily.forEach(day => {
+    daily.forEach((day, index) => {
       const el = dayTemplate.content.cloneNode(true)
       setValue("temp", day.maxTemp, { parent: el })
-      // Format date as "Mon, Aug 23" instead of just day name
-      const formattedDate = dayFormatter.format(day.timestamp)
-      setValue("date", formattedDate, { parent: el })
+      // Show the date object directly to debug
+      const dateStr = day.timestamp.toLocaleDateString()
+      setValue("date", dateStr, { parent: el })
       el.querySelector("[data-icon]").src = getIconUrl(day.iconCode)
       daySection.appendChild(el)
     })
@@ -69,8 +72,6 @@ function renderWeather({ current, daily, hourly }) {
   // Hourly forecast
   const hourSection = document.querySelector("[data-hour-section]")
   const hourTemplate = document.getElementById("hour-row-template")
-  const hourFormatter = new Intl.DateTimeFormat(undefined, { hour: "numeric" })
-  const dayFormatterHour = new Intl.DateTimeFormat(undefined, { weekday: "short" })
   
   if (hourSection && hourTemplate) {
     hourSection.innerHTML = ""
@@ -80,8 +81,8 @@ function renderWeather({ current, daily, hourly }) {
       setValue("fl-temp", hour.feelsLike, { parent: el })
       setValue("wind", hour.windSpeed, { parent: el })
       setValue("precip", hour.precip, { parent: el })
-      setValue("date", dayFormatterHour.format(hour.timestamp), { parent: el })
-      setValue("time", hourFormatter.format(hour.timestamp), { parent: el })
+      setValue("date", hour.timestamp.toLocaleDateString().split("/")[0], { parent: el })
+      setValue("time", hour.timestamp.toLocaleTimeString([], { hour: "numeric" }), { parent: el })
       el.querySelector("[data-icon]").src = getIconUrl(hour.iconCode)
       hourSection.appendChild(el)
     })
