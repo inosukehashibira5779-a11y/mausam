@@ -13,12 +13,17 @@ export function getWeather(lat, lon, timezone) {
     )
         .then(res => res.json())
         .then(data => {
+            console.log("API Response:", data)
             // Transform raw API data into our app's format
             return {
                 current: parseCurrentWeather(data),
                 daily: parseDailyWeather(data),
                 hourly: parseHourlyWeather(data)
             }
+        })
+        .catch(error => {
+            console.error("Fetch Error:", error)
+            throw error
         })
 }
 
