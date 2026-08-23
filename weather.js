@@ -1,237 +1,72 @@
-import { getWeather } from "./weather"
-import { ICON_MAP } from "./iconMap"
+import { ICON_MAP } from "./iconMap.js"
 
-navigator.geolocation.getCurrentPosition(positionSuccess, positionError)
-
-function positionSuccess({ coords }) {
-    getWeather(
-        coords.latitude,
-        coords.longitude,
-        
-        Intl.DateTimeFormat().resolvedOptions().timeZone
+export function getWeather(lat, lon, timezone) {
+    return fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&timezone=${timezone}&current=temperature_2m,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,precipitation_sum&hourly=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,precipitation`
     )
-        .then(renderWeather)
-        .catch(e => {
-            console.error("Error getting weather:", e)
-            alert("Error getting weather.")
+        .then(res => res.json())
+        .then(data => {
+            return {
+                current: parseCurrentWeather(data),
+                daily: parseDailyWeather(data),
+                hourly: parseHourlyWeather(data)
+            }
         })
 }
 
-function positionError() {
-    alert("There was an error getting your location. Please allow location access.")
-}
+function parseCurrentWeather(data) {
+    const { 
+        temperature_2m: temp,
+        weather_code: code,
+        wind_speed_10m: windSpeed
+    } = data.current
 
-function renderWeather({ current, daily, hourly }) {
-    renderCurrentWeather(current)
-    renderDailyWeather(daily)
-    renderHourlyWeather(hourly)
+    const { 
+        temperature_2m_max: maxTemp,
+        temperature_2m_min: minTemp,
+        apparent_temperature_max: maxFeelsLike,
+        apparent_temperature_min: minFeelsLike,
+        precipitation_sum: precip
+    } = data.daily.time.length > 0 ? {
+        temperature_2m_max: data.daily.temperature_2m_max[0],
+        temperature_2m_min: data.daily.temperature_2m_min[0],
+        apparent_temperature_max: data.daily.apparent_temperature_max[0],
+        apparent_temperature_min: data.daily.apparent_temperature_min[0],
+        precipitation_sum: data.daily.precipitation_sum[0]
+    } : {}
 
-    document.body.classList.remove("blurred")
-}
-
-function setValue(selector, value, { parent = document } = {}) {
-    const element = parent.querySelector(`[data-${selector}]`)
-    if (element) {
-        element.textContent = value
+    return {
+        currentTemp: Math.round(temp),
+        highTemp: Math.round(maxTemp),
+        lowTemp: Math.round(minTemp),
+        highFeelsLike: Math.round(maxFeelsLike),
+        lowFeelsLike: Math.round(minFeelsLike),
+        windSpeed: Math.round(windSpeed),
+        precip: Math.round(precip * 100) / 100,
+        iconCode: code
     }
 }
 
-function getIconUrl(iconCode) {
-    return `./icons/${ICON_MAP.get(iconCode)}.svg`
+function parseDailyWeather(data) {
+    return data.daily.time.map((time, index) => {
+        return {
+            timestamp: new Date(time),
+            iconCode: data.daily.weather_code[index],
+            maxTemp: Math.round(data.daily.temperature_2m_max[index]),
+            minTemp: Math.round(data.daily.temperature_2m_min[index])
+        }
+    }).slice(0, 7)
 }
 
-const currentIcon = document.querySelector("[data-current-icon]")
-
-function renderCurrentWeather(current) {
-    currentIcon.src = getIconUrl(current.iconCode)
-
-    setValue("current-temp", current.currentTemp)
-    setValue("current-high", current.highTemp)
-    setValue("current-low", current.lowTemp)
-    setValue("current-fl-high", current.highFeelsLike)
-    setValue("current-fl-low", current.lowFeelsLike)
-    setValue("current-wind", current.windSpeed)
-    setValue("current-precip", current.precip)
+function parseHourlyWeather(data) {
+    return data.hourly.time.map((time, index) => {
+        return {
+            timestamp: new Date(time),
+            iconCode: data.hourly.weather_code[index],
+            temp: Math.round(data.hourly.temperature_2m[index]),
+            feelsLike: Math.round(data.hourly.apparent_temperature[index]),
+            windSpeed: Math.round(data.hourly.wind_speed_10m[index]),
+            precip: Math.round(data.hourly.precipitation[index] * 100) / 100
+        }
+    }).slice(0, 24)
 }
-
-const DAY_FORMATTER = new Intl.DateTimeFormat(undefined, {
-    weekday: "long"
-})
-
-const HOURLY_DAY_FORMATTER = new Intl.DateTimeFormat(undefined, {
-    weekday: "long"
-})
-
-const HOURLY_TIME_FORMATTER = new Intl.DateTimeFormat(undefined, {
-    hour: "numeric"
-})
-
-const dailySection = document.querySelector("[data-day-section]")
-const dayCardTemplate = document.getElementById("day-card-template")
-
-function renderDailyWeather(daily) {
-    dailySection.innerHTML = ""
-
-    daily.forEach(day => {
-        const element = dayCardTemplate.content.cloneNode(true)
-
-        setValue("temp", day.maxTemp, { parent: element })
-        setValue("date", DAY_FORMATTER.format(day.timestamp), {
-            parent: element
-        })
-
-        element.querySelector("[data-icon]").src =
-            getIconUrl(day.iconCode)
-
-        dailySection.append(element)
-    })
-}
-
-const hourlySection = document.querySelector("[data-hour-section]")
-const hourRowTemplate = document.getElementById("hour-row-template")
-
-function renderHourlyWeather(hourly) {
-    hourlySection.innerHTML = ""
-
-    hourly.forEach(hour => {
-        const element = hourRowTemplate.content.cloneNode(true)
-
-        setValue("temp", hour.temp, { parent: element })
-        setValue("fl-temp", hour.feelsLike, { parent: element })
-        setValue("wind", hour.windSpeed, { parent: element })
-        setValue("precip", hour.precip, { parent: element })
-
-        setValue(
-            "date",
-            HOURLY_DAY_FORMATTER.format(hour.timestamp),
-            { parent: element }
-        )
-
-        setValue(
-            "time",
-            HOURLY_TIME_FORMATTER.format(hour.timestamp),
-            { parent: element }
-        )
-
-        element.querySelector("[data-icon]").src =
-            getIconUrl(hour.iconCode)
-
-        hourlySection.append(element)
-    })
-}
-
-
-
-
-
-
-
-
-
-/*
-
-import "./style.css"
-import { getWeather } from "./weather"
-import { ICON_MAP } from "./iconMap";
-
-
-navigator.geolocation.getCurrentPosition(positionSuccess, positionError)
-
-function positionSuccess({ coords })
-{
-    getWeather(coords.latitude, coords.longitude, Intl.DateTimeFormat().resolvedOptions()
-    .timeZone).then(renderWeather).catch(
-    e => {
-        console.log(e);
-        alert("error getting weather.")
-    })
-}
-
-function positionError() {
-    alert("Brow there was an error getting your location. Please allow us to use yourssss");
-}
-
-
-
-
-function renderWeather({ current, daily, hourly }) {
-    renderCurrentWeather(current)
-    renderDailyWeather(daily)
-     renderHourlyWeather(hourly)
-    document.body.classList.remove("blurred")
-}    
-
-
-function setValue(selector, value, { parent = document } = {}) {
-    const element = parent.querySelector(`[data-${selector}]`)
-    console.log(selector, element)
-
-    element.textContent = value
-}
-
-
-function getIconUrl(iconCode) {
-    return `icons/${ICON_MAP.get(iconCode)}.svg`
-}
-
-const currentIcon = document.querySelector('[data-current-icon]')
-
-function renderCurrentWeather(current) {
-    currentIcon.src = getIconUrl(current.iconCode)
- setValue("current-temp", current.currentTemp)
- setValue("current-high", current.highTemp)
- setValue("current-low", current.lowTemp)
- setValue("current-fl-high", current.highFeelsLike)
- setValue("current-fl-low", current.lowFeelsLike)
- setValue("current-wind", current.windSpeed)
- setValue("current-precip", current.precip)
-}
-
-
-const DAY_FORMATTER = new Intl.DateTimeFormat(undefined, { weekday:
-    "long" })
-const dailySection = document.querySelector('[data-day-section]')
-const dayCardTemplate = document.getElementById("day-card-template")
-function renderDailyWeather(daily) {
-    dailySection.innerHTML  = "";
-    daily.forEach(day => {
-        const element = dayCardTemplate.content.cloneNode(true)
-        setValue("temp", day.maxTemp, { parent: element })
-        setValue("date", DAY_FORMATTER.format(day.timestamp), { parent: element })
-        element.querySelector('[data-icon]').src = getIconUrl(day.iconCode)
-        dailySection.append(element)
-    })
-}
-
-
-
-const HOURLY_FORMATTER = new Intl.DateTimeFormat(undefined, { hour: "numeric"})
-const hourlySection = document.querySelector('[data-hour-section]')
-const hourRowTemplate = document.getElementById("hour-row-template")
-
-
-
-
-
-
-function renderHourlyWeather(hourly) {
-    hourlySection.innerHTML = "";
-
-    hourly.forEach(hour => {
-        const element = hourRowTemplate.content.cloneNode(true)
-
-        setValue("temp", hour.temp, { parent: element })
-        setValue("fl-temp", hour.feelsLike, { parent: element })
-        setValue("wind", hour.windSpeed, { parent: element })
-        setValue("precip", hour.precip, { parent: element })
-
-        setValue("date", DAY_FORMATTER.format(hour.timestamp), { parent: element })
-        setValue("time", HOURLY_FORMATTER.format(hour.timestamp), { parent: element })
-
-        element.querySelector('[data-icon]').src = getIconUrl(hour.iconCode)
-
-        hourlySection.append(element)
-    })
-}
-
-*/
