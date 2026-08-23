@@ -1,74 +1,31 @@
-import axios from "axios"
+import "./style.css"
+import { getWeather } from "./weather.js"
+import { ICON_MAP } from "./iconMap.js"
 
-//https://api.open-meteo.com/v1/forecast?daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,apparent_temperature_max,apparent_temperature_min&hourly=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,precipitation&current=weather_code,wind_speed_10m,temperature_2m&timeformat=unixtime
+navigator.geolocation.getCurrentPosition(positionSuccess, positionError)
 
-export function getWeather(lat, lon, timezone){
-    return axios.get("https://api.open-meteo.com/v1/forecast?daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,apparent_temperature_max,apparent_temperature_min&hourly=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,precipitation&current=weather_code,wind_speed_10m,temperature_2m&timeformat=unixtime", 
-        {
-            params: {
-                latitude: lat,
-                longitude: lon,
-                timezone,
-            },
-        }
-    ).then(({ data }) => {
-     return {
-            current: parseCurrentWeather(data),
-            daily: parseDailyWeather(data),
-            hourly: parseHourlyWeather(data) 
-        }
-    })
+function positionSuccess({ coords }) {
+    getWeather(
+        coords.latitude,
+        coords.longitude,
+        Intl.DateTimeFormat().resolvedOptions().timeZone
+    )
+        .then(renderWeather)
+        .catch(e => {
+            console.error("Error getting weather:", e)
+            alert("Error getting weather: " + e.message)
+        })
 }
 
-
-function parseCurrentWeather({ current: current_weather, daily }) {
-    const {
-        temperature_2m: currentTemp,
-        wind_speed_10m: windSpeed,
-        weather_code: iconCode,
-    } = current_weather
-
-    const {
-        temperature_2m_max: [maxTemp],
-        temperature_2m_min: [minTemp],
-        apparent_temperature_max: [maxFeelsLike],
-        apparent_temperature_min: [minFeelsLike],
-        precipitation_sum: [precip],
-    } = daily
-
-    return {
-        currentTemp: Math.round(currentTemp),
-        highTemp: Math.round(maxTemp),
-        lowTemp: Math.round(minTemp),
-        highFeelsLike: Math.round(maxFeelsLike),
-        lowFeelsLike: Math.round(minFeelsLike),
-        windSpeed: Math.round(windSpeed),
-        precip: Math.round(precip *100) /100,
-        iconCode,
-    }
+function positionError(error) {
+    console.error("Location error:", error)
+    alert("Location error: " + error.message)
 }
 
-
-function parseDailyWeather({ daily }){
-    return daily.time.map((time, index) => {
-        return{
-            timestamp: time * 1000,
-            iconCode: daily.weather_code[index],
-            maxTemp: Math.round(daily.temperature_2m_max[index])
-        }
-    })
+function getIconUrl(iconCode) {
+    return `./public/icons/${ICON_MAP.get(iconCode)}.svg`
 }
 
-function parseHourlyWeather({ hourly, current: current_weather }) {
-    return hourly.time
-    .map((time, index) => {
-        return {
-            timestamp: time * 1000,
-            iconCode: hourly.weather_code[index],
-            temp: Math.round(hourly.temperature_2m[index]),
-            feelsLike: Math.round(hourly.apparent_temperature[index]),
-            windSpeed: Math.round(hourly.wind_speed_10m[index]),
-            precip: Math.round(hourly.precipitation[index] * 100) /100,
-        }
-    }).filter(({ timestamp }) => timestamp >= current_weather.time * 1000)
+function renderWeather(data) {
+    console.log(data)
 }
