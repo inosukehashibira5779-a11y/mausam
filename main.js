@@ -51,14 +51,16 @@ function renderWeather({ current, daily, hourly }) {
   // Daily forecast
   const daySection = document.querySelector("[data-day-section]")
   const dayTemplate = document.getElementById("day-card-template")
-  const dayFormatter = new Intl.DateTimeFormat(undefined, { weekday: "long" })
+  const dayFormatter = new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric" })
   
   if (daySection && dayTemplate) {
     daySection.innerHTML = ""
     daily.forEach(day => {
       const el = dayTemplate.content.cloneNode(true)
       setValue("temp", day.maxTemp, { parent: el })
-      setValue("date", dayFormatter.format(day.timestamp), { parent: el })
+      // Format date as "Mon, Aug 23" instead of just day name
+      const formattedDate = dayFormatter.format(day.timestamp)
+      setValue("date", formattedDate, { parent: el })
       el.querySelector("[data-icon]").src = getIconUrl(day.iconCode)
       daySection.appendChild(el)
     })
@@ -68,7 +70,7 @@ function renderWeather({ current, daily, hourly }) {
   const hourSection = document.querySelector("[data-hour-section]")
   const hourTemplate = document.getElementById("hour-row-template")
   const hourFormatter = new Intl.DateTimeFormat(undefined, { hour: "numeric" })
-  const dayFormatterHour = new Intl.DateTimeFormat(undefined, { weekday: "long" })
+  const dayFormatterHour = new Intl.DateTimeFormat(undefined, { weekday: "short" })
   
   if (hourSection && hourTemplate) {
     hourSection.innerHTML = ""
