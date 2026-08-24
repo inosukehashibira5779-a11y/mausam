@@ -1,1 +1,1 @@
-https://inosukehashibira5779-a11y.github.io/mausam/
+https://inosukehashibira5779.github.io/mausam/
