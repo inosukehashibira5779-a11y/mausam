@@ -1,1 +1,1 @@
-https://inosukehashibira5779.github.io/mausam/
+https://prathampatel79.github.io/mausam/
